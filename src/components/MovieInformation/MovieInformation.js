@@ -6,20 +6,21 @@ import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 
-import { useGetMovieQuery } from '../../services/TMDB';
+import { useGetMovieQuery, useGetRecommendationMoviesQuery } from '../../services/TMDB';
 import useStyles from './styles';
 import genreIcons from '../../assets/genres';
 import { selectGenreOrCategory } from '../../features/currentGenreOrCategory';
+import MovieList from '../Movies/components/MovieList/MovieList';
 
 const MovieInformation = () => {
   const { id } = useParams();
   const { data, isFetching, error } = useGetMovieQuery(id);
+  const { data: recommendationMovies, isFetching: isRemmendationFetching } = useGetRecommendationMoviesQuery({ list: '/recommendations', movieId: id });
   const classes = useStyles();
   const dispatch = useDispatch();
   const isFavorited = true;
   const isWishlist = true;
   const [open, setOpen] = useState(false);
-
   const addToFav = () => {
 
   };
@@ -105,9 +106,16 @@ const MovieInformation = () => {
               </Grid>
             </div>
           </Grid>
-
         </Grid>
       </Grid>
+      <Box marginTop="5rem" width="100%">
+        <Typography variant="h3" gutterBottom align="center">
+          You may also like
+        </Typography>
+        {recommendationMovies
+          ? <MovieList movies={recommendationMovies} numberOfMovie={12} />
+          : <Box>Sorry, Nothing for you.</Box>}
+      </Box>
       <Modal closeAfterTransition className={classes.modal} open={open} onClose={() => setOpen(false)}>
         {data?.videos?.results?.length > 0 && (
         <iframe

@@ -34,3 +34,25 @@ export const createSessionId = async () => {
     }
   }
 };
+
+const buildPostUrl = (userId, urlType) => {
+  const sessionId = localStorage.getItem('session_id');
+  return `https://api.themoviedb.org/3/account/${userId}/${urlType}?api_key=${process.env.REACT_APP_TMDB_KEY}&session_id=${sessionId}`;
+};
+
+export const toggleFavorite = async (userId, videoId, isFavorited) => {
+  const url = buildPostUrl(userId, 'favorite');
+  await axios.post(
+    url,
+    { media_type: 'movie', media_id: videoId, favorite: !isFavorited },
+  );
+};
+
+export const toggleWatchlist = async (userId, videoId, isWatchlist) => {
+  const url = buildPostUrl(userId, 'watchlist');
+  await axios.post(
+    url,
+    { media_type: 'movie', media_id: videoId, watchlist: !isWatchlist },
+  );
+};
+

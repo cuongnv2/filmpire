@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Typography, Box, Button, ButtonGroup, Grid, CircularProgress, useMediaQuery, Rating } from '@mui/material';
 import { Movie as MovieIcon, Theaters, Language, PlusOne, Favorite, Remove, ArrowBack } from '@mui/icons-material';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
@@ -6,27 +6,45 @@ import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 
-import { useGetMovieQuery, useGetRecommendationMoviesQuery } from '../../services/TMDB';
+import { useGetMovieQuery, useGetRecommendationMoviesQuery, useGetListQuery } from '../../services/TMDB';
 import useStyles from './styles';
 import genreIcons from '../../assets/genres';
 import { selectGenreOrCategory } from '../../features/currentGenreOrCategory';
 import MovieList from '../Movies/components/MovieList/MovieList';
+import { userSelector } from '../../features/auth';
+import { toggleFavorite, toggleWatchlist } from '../../utils';
 
 const MovieInformation = () => {
+  const sessionId = localStorage.getItem('session_id');
   const { id } = useParams();
+  const { user } = useSelector(userSelector);
   const { data, isFetching, error } = useGetMovieQuery(id);
-  const { data: recommendationMovies, isFetching: isRemmendationFetching } = useGetRecommendationMoviesQuery({ list: '/recommendations', movieId: id });
+  const { data: recommendationMovies } = useGetRecommendationMoviesQuery({ list: '/recommendations', movieId: id });
+  const { data: favoriteMovies } = useGetListQuery({ listName: 'favorite/movies', accountId: user.id, sessionId, page: 1 });
+  const { data: watchlistMovies } = useGetListQuery({ listName: 'watchlist/movies', accountId: user.id, sessionId, page: 1 });
   const classes = useStyles();
   const dispatch = useDispatch();
-  const isFavorited = true;
-  const isWishlist = true;
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isWatchlist, setIsWatchList] = useState(false);
+
   const [open, setOpen] = useState(false);
-  const addToFav = () => {
 
+  const addToFav = async () => {
+    await toggleFavorite(user.id, id, isFavorited);
+    setIsFavorited((prev) => !prev);
   };
-  const addToWishlist = () => {
+  const addToWatchlist = async () => {
+    await toggleWatchlist(user.id, id, isWatchlist);
+    setIsWatchList((prev) => !prev);
+  };
 
-  };
+  useEffect(() => {
+    setIsFavorited(!!favoriteMovies?.results?.find((movie) => movie?.id === data?.id));
+  }, [favoriteMovies, data]);
+
+  useEffect(() => {
+    setIsWatchList(!!watchlistMovies?.results?.find((movie) => movie?.id === data?.id));
+  }, [watchlistMovies, data]);
 
   if (isFetching) {
     return (
@@ -96,7 +114,7 @@ const MovieInformation = () => {
                   <Button onClick={addToFav} endIcon={isFavorited ? <FavoriteBorderOutlinedIcon /> : <Favorite />}>
                     {isFavorited ? 'Unfavorite' : 'Favorite'}
                   </Button>
-                  <Button onClick={addToWishlist} endIcon={isWishlist ? <Remove /> : <PlusOne />}>
+                  <Button onClick={addToWatchlist} endIcon={isWatchlist ? <Remove /> : <PlusOne />}>
                     WatchList
                   </Button>
                   <Button endIcon={<ArrowBack />} sx={{ borderColor: 'primary.main' }}>
